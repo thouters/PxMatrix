@@ -148,7 +148,7 @@ class PxMATRIX : public Adafruit_GFX {
   inline PxMATRIX(uint16_t width, uint16_t height,uint8_t LATCH, uint8_t OE, uint8_t A,uint8_t B,uint8_t C,uint8_t D);
   inline PxMATRIX(uint16_t width, uint16_t height,uint8_t LATCH, uint8_t OE, uint8_t A,uint8_t B,uint8_t C,uint8_t D,uint8_t E);
 
-  inline void begin(uint8_t row_pattern, uint8_t CLK, uint8_t MOSI, uint8_t MISO, uint8_t SS);
+  inline void begin(uint8_t row_pattern, uint8_t CLK, uint8_t MOSI, uint8_t MISO, uint8_t HUB_SS);
   inline void begin(uint8_t row_pattern);
   inline void begin();
 
@@ -629,7 +629,7 @@ inline void PxMATRIX::setColorOffset(uint8_t r, uint8_t g,uint8_t b)
 
 inline void PxMATRIX::fillMatrixBuffer(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b,bool selected_buffer)
 {
- 
+
   if (_rotate){
     uint16_t temp_x=x;
     x=y;
@@ -639,10 +639,10 @@ inline void PxMATRIX::fillMatrixBuffer(int16_t x, int16_t y, uint8_t r, uint8_t 
 
   if (!_flip)
     x =_width - 1 -x;
-  
+
    if ((x < 0) || (x >= _width) || (y < 0) || (y >= _height))
-    return;  
-  
+    return;
+
   if (_color_order!= RRGGBB)
   {
     uint8_t r_temp=r;
@@ -660,7 +660,7 @@ inline void PxMATRIX::fillMatrixBuffer(int16_t x, int16_t y, uint8_t r, uint8_t 
       case (BBGGRR): r=b_temp; g=g_temp; b=r_temp; break;
     }
   }
-  
+
   uint32_t base_offset;
   uint32_t total_offset_r=0;
   uint32_t total_offset_g=0;
@@ -787,7 +787,7 @@ inline void PxMATRIX::fillMatrixBuffer(int16_t x, int16_t y, uint8_t r, uint8_t 
   r = r >> (8-PxMATRIX_COLOR_DEPTH);
   g = g >> (8-PxMATRIX_COLOR_DEPTH);
   b = b >> (8-PxMATRIX_COLOR_DEPTH);
-  
+
   //Color interlacing
   for (int this_color_bit=0; this_color_bit<PxMATRIX_COLOR_DEPTH; this_color_bit++)
   {
@@ -838,12 +838,12 @@ inline void PxMATRIX::begin()
 
 }
 
-void PxMATRIX::begin(uint8_t row_pattern, uint8_t CLK, uint8_t MOSI, uint8_t MISO, uint8_t SS)
+void PxMATRIX::begin(uint8_t row_pattern, uint8_t CLK, uint8_t MOSI, uint8_t MISO, uint8_t HUB_SS)
 {
   _SPI_CLK = CLK;
   _SPI_MOSI = MOSI;
   _SPI_MISO = MISO;
-  _SPI_SS = SS;
+  _SPI_SS = HUB_SS;
   begin(row_pattern);
 
 }
@@ -1035,7 +1035,7 @@ void PxMATRIX::latch(uint16_t show_time )
 void PxMATRIX::display(uint16_t show_time) {
   if (show_time == 0)
     show_time =1;
-  
+
   // How long do we keep the pixels on
   uint16_t latch_time = ((show_time*(1<<_display_color)*_brightness)/255/2);
 
@@ -1069,7 +1069,7 @@ uint8_t (*bufferp)[PxMATRIX_COLOR_DEPTH][buffer_size] = &PxMATRIX_buffer;
         digitalWrite(_LATCH_PIN,LOW);
         digitalWrite(_OE_PIN,LOW);
         start_time = micros();
-        
+
 
         delayMicroseconds(1);
         if (i<_row_pattern-1)
@@ -1077,12 +1077,12 @@ uint8_t (*bufferp)[PxMATRIX_COLOR_DEPTH][buffer_size] = &PxMATRIX_buffer;
           // This pre-buffers the data for the next row pattern of this _display_color
           SPI_TRANSFER(&(*bufferp)[_display_color][(i+1)*_send_buffer_size],_send_buffer_size);
         }
-        else 
-        { 
+        else
+        {
           // This pre-buffers the data for the first row pattern of the next _display_color
-          SPI_TRANSFER(&(*bufferp)[((_display_color+1)%PxMATRIX_COLOR_DEPTH)][0],_send_buffer_size); 
+          SPI_TRANSFER(&(*bufferp)[((_display_color+1)%PxMATRIX_COLOR_DEPTH)][0],_send_buffer_size);
         }
-       
+
         while ((micros()-start_time)<latch_time)
           delayMicroseconds(1);
         digitalWrite(_OE_PIN,HIGH);
@@ -1101,10 +1101,10 @@ uint8_t (*bufferp)[PxMATRIX_COLOR_DEPTH][buffer_size] = &PxMATRIX_buffer;
 #else
   SPI_TRANSFER(&(*bufferp)[_display_color][i*_send_buffer_size],_send_buffer_size);
 #endif
-        latch(latch_time); 
+        latch(latch_time);
       }
     }
-    
+
     if (_driver_chip == FM6124 || _driver_chip == FM6126A) // _driver_chip == FM6124
     {
     #ifdef ESP32
